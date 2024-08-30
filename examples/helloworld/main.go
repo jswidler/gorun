@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/jswidler/gorun"
@@ -36,7 +35,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	err = gorunner.Start(ctx)
 	if err != nil {
 		panic(err)
@@ -45,9 +46,7 @@ func main() {
 
 	gorunner.ScheduleRepeatedWithKey(ctx, "myTriggerId", 2*time.Second, HelloWorld{Msg: "Hello, World!"})
 
-	exitSignal := make(chan os.Signal, 1)
-	signal.Notify(exitSignal, syscall.SIGINT)
-	<-exitSignal
+	<-ctx.Done()
 }
 
 func setupLogging() {

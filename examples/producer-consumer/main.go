@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/jswidler/gorun"
@@ -34,38 +33,31 @@ func (HelloWorld) JobType() string {
 func main() {
 	setupLogging()
 	args := os.Args
-
-	stop := make(chan struct{})
-
-	go func() {
-		exitSignal := make(chan os.Signal, 1)
-		signal.Notify(exitSignal, syscall.SIGINT)
-		<-exitSignal
-		log.Info().Msg("Received SIGINT")
-		close(stop)
-	}()
-
 	if len(args) > 1 && args[1] == "serve" {
-		runJobServer(stop)
+		runJobServer()
 	} else {
-		runJobQueuer(stop)
+		runJobProducer()
 	}
 }
 
-func runJobQueuer(stop <-chan struct{}) {
+func runJobProducer() {
+	log.Info().Msg("Starting job producer")
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	// The settings do not matter much on the producer side as long as it connects to the same database
 	gorunner, err := gorun.NewFromEnv()
 	if err != nil {
 		panic(err)
 	}
-	ctx := context.Background()
 
 	// Every 2 seconds, schedule a job with a random number for the payload
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
-		case <-stop:
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			i := rand.Int63n(100)
@@ -75,22 +67,24 @@ func runJobQueuer(stop <-chan struct{}) {
 	}
 }
 
-func runJobServer(stop <-chan struct{}) {
+func runJobServer() {
 	log.Info().Msg("Starting jobs server")
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
 	// We will slow down the batch frequency to 5 seconds to make it easier to read the logs
 	gorunner, err := gorun.NewFromEnv(gorun.WithBatchFreq(5 * time.Second))
 	if err != nil {
 		panic(err)
 	}
-	ctx := context.Background()
 	err = gorunner.Start(ctx)
 	if err != nil {
 		panic(err)
 	}
 	defer gorunner.Close()
 
-	<-stop
+	<-ctx.Done()
 }
 
 func setupLogging() {
