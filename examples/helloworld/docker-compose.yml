@@ -1,0 +1,24 @@
+services:
+  database:
+    image: postgres:16
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - PGPORT=2345
+    ports:
+      - "127.0.0.1:2345:2345"
+
+  gorunner:
+    image: golang:1.22
+    working_dir: /app
+    command: go run /app/main.go
+    depends_on:
+      - database
+    volumes:
+      - .:/app
+    environment:
+      - ENV=dev
+      - GORUN_DB_PORT=2345
+      - GORUN_DB_HOST=database
+      - GORUN_DB_SSL_MODE=disable
