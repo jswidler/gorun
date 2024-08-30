@@ -27,9 +27,7 @@ type GoRunService interface {
 	Close()
 }
 
-type Handler[T JobData] struct {
-	Execute func(ctx context.Context, args *T) (string, error)
-}
+type Handler[T JobData] func(ctx context.Context, args *T) (string, error)
 
 type handlerInternal[T JobData] struct {
 	Execute func(ctx context.Context, args *T) (string, error)
@@ -48,10 +46,10 @@ type Validateable interface {
 	Validate() error
 }
 
-func RegisterHandler[T JobData](h *Handler[T]) {
+func RegisterHandler[T JobData](h Handler[T]) {
 	var t T
 	hi := handlerInternal[T]{
-		Execute: h.Execute,
+		Execute: h,
 		ArgsFn: func() *T {
 			var t T
 			return &t
