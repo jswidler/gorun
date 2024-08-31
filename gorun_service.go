@@ -372,27 +372,30 @@ func getHandlerFunctions(jobType string) (argsFn, executeFn reflect.Value, err e
 }
 
 func (g gorunner) writeJobResult(ctx context.Context, job *gorundb.JobData, start time.Time, result string, err error) {
-	if result == "" {
-		if err == nil {
+	if err == nil {
+		job.Status = string(StatusCompleted)
+		if result == "" {
 			result = "success"
-		} else {
+		}
+	} else {
+		job.Status = string(StatusFailed)
+		if result == "" {
 			result = err.Error()
 		}
 	}
 	job.Result = &result
+
 	err2 := g.db.JobView.UpdateJob(ctx, job)
 	if err2 != nil {
-		// this function does not return an error because it is run as a defer.
+		// writeJobResult does not return an error because it is run as a defer.
 		logger.Ctx(ctx).Error().Err(err2).Msg("failed to write job result")
 	}
 
 	dur := time.Since(start)
 	if err == nil {
-		logger.Ctx(ctx).Info().Str("result", result).Dur("duration", dur).Msg("job complete")
-		job.Status = string(StatusCompleted)
+		logger.Ctx(ctx).Info().Str("result", result).Dur("duration", dur).Msg("job completed")
 	} else {
 		logger.Ctx(ctx).Error().Str("result", result).Dur("duration", dur).Err(err).Msg("job failed")
-		job.Status = string(StatusFailed)
 	}
 }
 
