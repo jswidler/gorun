@@ -3,8 +3,8 @@ package gorun
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -17,8 +17,8 @@ import (
 	"github.com/jswidler/gorun/ulid"
 )
 
-var ErrUnregisteredJobType = errors.Sentinel("unregistered job type", 500)
-var ErrGorunInternalError = errors.Sentinel("internal gorun job service error", 500)
+var ErrUnregisteredJobType = errors.Sentinel("unregistered job type")
+var ErrGorunInternalError = errors.Sentinel("internal gorun job service error")
 
 type gorunner struct {
 	db *gorundb.Db
@@ -315,7 +315,7 @@ func (g *gorunner) runJob(ctx context.Context, job *gorundb.JobData) {
 	result := ""
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Wrap(fmt.Errorf("PANIC: %v", r))
+			err = errors.Panic(r, debug.Stack())
 		}
 		g.writeJobResult(ctx, job, start, result, err)
 		if onComplete != nil {

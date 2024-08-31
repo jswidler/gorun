@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	ErrConflict                 = errors.Sentinel("uniqueness conflict", 500, errors.WithUserMessage("An unexpected error occurred."))
-	ErrInvalidForeignKey        = errors.Sentinel("invalid foreign key", 500, errors.WithUserMessage("An unexpected error occurred."))
-	ErrDeleteViolatesForeignKey = errors.Sentinel("delete violates foreign key", 500, errors.WithUserMessage("An unexpected error occurred."))
-	ErrDatabaseError            = errors.Sentinel("database error", 500, errors.WithUserMessage("An unexpected error occurred."))
-	ErrNotFound                 = errors.Sentinel("not found", 500, errors.WithUserMessage("That information could not be found."))
+	ErrConflict                 = errors.Sentinel("uniqueness conflict")
+	ErrInvalidForeignKey        = errors.Sentinel("invalid foreign key")
+	ErrDeleteViolatesForeignKey = errors.Sentinel("delete violates foreign key")
+	ErrDatabaseError            = errors.Sentinel("database error")
+	ErrNotFound                 = errors.Sentinel("not found")
 
-	ErrNotUpdateable = errors.Sentinel("not updateable", 500, errors.WithUserMessage("An unexpected error occurred."))
+	ErrNotUpdateable = errors.Sentinel("not updateable")
 )
 
 const (

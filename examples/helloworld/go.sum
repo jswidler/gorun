@@ -16,8 +16,8 @@ github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqw
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
-github.com/jswidler/gorun v0.2.0 h1:+nyJ0TTBGWNDIMq+AR97pcRldRqFj2Yqvf/4FJ0Fwes=
-github.com/jswidler/gorun v0.2.0/go.mod h1:ayR6KD3+ptygj4hzDU4cfEV2vJA3yYGGs+pdbK+Xnls=
+github.com/jswidler/gorun v0.2.2 h1:WEunG6hNq9bsdZBaWfqBs0jFJpwt3uP9o2zmupezx10=
+github.com/jswidler/gorun v0.2.2/go.mod h1:ayR6KD3+ptygj4hzDU4cfEV2vJA3yYGGs+pdbK+Xnls=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=

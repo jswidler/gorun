@@ -20,7 +20,7 @@ type Trigger interface {
 
 var triggerHandlers = map[string]Trigger{}
 
-var ErrInvalidTriggerType = errors.Sentinel("invalid trigger type", 500)
+var ErrInvalidTriggerType = errors.Sentinel("invalid trigger type")
 
 func RegisterTriggerHandler(handlers ...Trigger) {
 	for i := range handlers {

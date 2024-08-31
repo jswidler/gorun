@@ -19,8 +19,8 @@ const dialect = "postgres"
 var migrationFiles embed.FS
 
 var (
-	ErrDbMigrationFailed = errors.Sentinel("database migration failed", 500)
-	ErrDbResetNotAllowed = errors.Sentinel("database reset is not allowed due to settings", 500)
+	ErrDbMigrationFailed = errors.Sentinel("database migration failed")
+	ErrDbResetNotAllowed = errors.Sentinel("database reset is not allowed due to settings")
 )
 
 // MigrateUp migrates the database to the latest version

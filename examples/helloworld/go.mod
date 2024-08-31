@@ -3,7 +3,7 @@ module github.com/jswidler/gorun/examples/helloworld
 go 1.22.3
 
 require (
-	github.com/jswidler/gorun v0.2.0
+	github.com/jswidler/gorun v0.2.2
 	github.com/rs/zerolog v1.33.0
 )
 
