@@ -227,10 +227,10 @@ func (g gorunner) MarkIncompleteJobs(ctx context.Context) error {
 
 func (g gorunner) scheduleJobsFromTrigger(ctx context.Context, trigger *gorundb.JobTrigger, now, minScheduleTime time.Time) error {
 	logger.Ctx(ctx).Info().
-		Str("triggerJobType", trigger.JobType). // jobType is used by the job running this command
+		Str("jobType", trigger.JobType). // jobType is used by the job running this command
 		Str("triggerType", trigger.TriggerType).
 		Str("triggerId", trigger.Id).
-		Msgf("scheduling %s job for trigger", trigger.JobType)
+		Msg("scheduling job for trigger")
 
 	prevScheduleUntil := trigger.ScheduledUntil // stored to prevent race conditions from scheduling the same job twice
 	trig, err := triggers.LoadTrigger(trigger.TriggerType, trigger.TriggerData)
@@ -293,6 +293,7 @@ func (g *gorunner) runBatch(ctx context.Context) error {
 }
 
 func (g *gorunner) runJob(ctx context.Context, job *gorundb.JobData) {
+	start := time.Now()
 	l := logger.Ctx(ctx).With().Str("jobId", job.Id).Str("jobType", job.Type)
 	if job.TriggerId != nil {
 		l = l.Str("triggerId", *job.TriggerId)
@@ -303,7 +304,7 @@ func (g *gorunner) runJob(ctx context.Context, job *gorundb.JobData) {
 	}
 	ctx = l.Logger().WithContext(ctx)
 
-	logger.Ctx(ctx).Info().Msgf("running %s job", job.Type)
+	logger.Ctx(ctx).Info().Msg("job starting")
 
 	var onComplete func(context.Context, string, string, error)
 	if g.tracer != nil {
@@ -316,7 +317,7 @@ func (g *gorunner) runJob(ctx context.Context, job *gorundb.JobData) {
 		if r := recover(); r != nil {
 			err = errors.Wrap(fmt.Errorf("PANIC: %v", r))
 		}
-		g.writeJobResult(ctx, job, result, err)
+		g.writeJobResult(ctx, job, start, result, err)
 		if onComplete != nil {
 			onComplete(ctx, job.Id, result, err)
 		}
@@ -370,7 +371,7 @@ func getHandlerFunctions(jobType string) (argsFn, executeFn reflect.Value, err e
 	return
 }
 
-func (g gorunner) writeJobResult(ctx context.Context, job *gorundb.JobData, result string, err error) {
+func (g gorunner) writeJobResult(ctx context.Context, job *gorundb.JobData, start time.Time, result string, err error) {
 	if result == "" {
 		if err == nil {
 			result = "success"
@@ -379,21 +380,19 @@ func (g gorunner) writeJobResult(ctx context.Context, job *gorundb.JobData, resu
 		}
 	}
 	job.Result = &result
-
-	if err == nil {
-		logger.Ctx(ctx).Info().Msgf("%s job complete", job.Type)
-		job.Status = string(StatusCompleted)
-	} else {
-		if result == "" {
-			result = fmt.Sprintf("%v", err)
-		}
-		logger.Ctx(ctx).Error().Err(err).Msgf("%s job failed", job.Type)
-		job.Status = string(StatusFailed)
-	}
 	err2 := g.db.JobView.UpdateJob(ctx, job)
 	if err2 != nil {
 		// this function does not return an error because it is run as a defer.
-		logger.Ctx(ctx).Error().Err(err2).Str("jobResult", result).Msg("failed to write job result")
+		logger.Ctx(ctx).Error().Err(err2).Msg("failed to write job result")
+	}
+
+	dur := time.Since(start)
+	if err == nil {
+		logger.Ctx(ctx).Info().Str("result", result).Dur("duration", dur).Msg("job complete")
+		job.Status = string(StatusCompleted)
+	} else {
+		logger.Ctx(ctx).Error().Str("result", result).Dur("duration", dur).Err(err).Msg("job failed")
+		job.Status = string(StatusFailed)
 	}
 }
 
