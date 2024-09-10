@@ -347,6 +347,13 @@ func (g *gorunner) runJob(ctx context.Context, job *gorundb.JobData) {
 			return
 		}
 	}
+	if g.argProcessor != nil {
+		err = g.argProcessor(ctx, job.Type, job.Id, argsPtrT)
+		if err != nil {
+			err = errors.Wrap(err)
+			return
+		}
+	}
 
 	fnReturns := executeFn.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(argsPtrT)})
 
