@@ -11,17 +11,17 @@ func Sentinel(message string) error {
 	return merry.New(message, merry.NoCaptureStack())
 }
 
-func Wrap(err error, wrappers ...merry.Wrapper) error {
-	wrappers = append(wrappers, merry.CaptureStack(false))
-	return merry.WrapSkipping(err, 1, wrappers...)
-}
-
 func New(message string) error {
 	return merry.WrapSkipping(err(message), 1, merry.CaptureStack(false))
 }
 
 func Newf(message string, a ...any) error {
 	return merry.WrapSkipping(fmt.Errorf(message, a...), 1, merry.CaptureStack(false))
+}
+
+func Wrap(err error, wrappers ...merry.Wrapper) error {
+	wrappers = append(wrappers, merry.CaptureStack(false))
+	return merry.WrapSkipping(err, 1, wrappers...)
 }
 
 func Panic(r any, s []byte) error {

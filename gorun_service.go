@@ -27,11 +27,13 @@ type gorunner struct {
 	batchFreq  time.Duration
 	jobTimeout time.Duration
 
-	tracer JobTracer
-
 	ticker    *time.Ticker
 	done      chan (struct{})
 	waitGroup *sync.WaitGroup
+
+	jobInit      func(ctx context.Context, jobType string, jobId string) context.Context
+	argProcessor func(ctx context.Context, jobType string, jobId string, args any) error
+	jobComplete  func(ctx context.Context, jobType string, jobId string, result string, err error)
 }
 
 type options struct {
@@ -40,7 +42,9 @@ type options struct {
 	jobTimeout     time.Duration
 	disableLogging bool
 
-	tracer JobTracer
+	jobInit      func(ctx context.Context, jobType string, jobId string) context.Context
+	argProcessor func(ctx context.Context, jobType string, jobId string, args any) error
+	jobComplete  func(ctx context.Context, jobType string, jobId string, result string, err error)
 }
 
 func newGorunner(db *gorundb.Db, opts []Option) *gorunner {
@@ -56,11 +60,13 @@ func newGorunner(db *gorundb.Db, opts []Option) *gorunner {
 	logger.DisableLogging = o.disableLogging
 
 	return &gorunner{
-		db:         db,
-		batchSize:  o.batchSize,
-		batchFreq:  o.batchFreq,
-		jobTimeout: o.jobTimeout,
-		tracer:     o.tracer,
+		db:           db,
+		batchSize:    o.batchSize,
+		batchFreq:    o.batchFreq,
+		jobTimeout:   o.jobTimeout,
+		jobInit:      o.jobInit,
+		argProcessor: o.argProcessor,
+		jobComplete:  o.jobComplete,
 	}
 }
 
@@ -306,20 +312,19 @@ func (g *gorunner) runJob(ctx context.Context, job *gorundb.JobData) {
 
 	logger.Ctx(ctx).Info().Msg("job starting")
 
-	var onComplete func(context.Context, string, string, error)
-	if g.tracer != nil {
-		ctx, onComplete = g.tracer(ctx, job.Id)
+	var err error
+	if g.jobInit != nil {
+		ctx = g.jobInit(ctx, job.Type, job.Id)
 	}
 
-	var err error
 	result := ""
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.Panic(r, debug.Stack())
 		}
 		g.writeJobResult(ctx, job, start, result, err)
-		if onComplete != nil {
-			onComplete(ctx, job.Id, result, err)
+		if g.jobComplete != nil {
+			g.jobComplete(ctx, job.Type, job.Id, result, err)
 		}
 	}()
 

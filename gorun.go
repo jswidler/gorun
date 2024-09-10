@@ -110,11 +110,21 @@ func WithJobTimeout(jobTimeout time.Duration) Option {
 	}
 }
 
-type JobTracer func(ctx context.Context, jobId string) (context.Context, func(ctx context.Context, jobId string, result string, err error))
-
-func WithJobTracing(tracer JobTracer) Option {
+func OnJobInit(f func(ctx context.Context, jobType string, jobId string) context.Context) Option {
 	return func(o *options) {
-		o.tracer = tracer
+		o.jobInit = f
+	}
+}
+
+func WithArgProcessor(f func(ctx context.Context, jobType string, jobId string, args any) error) Option {
+	return func(o *options) {
+		o.argProcessor = f
+	}
+}
+
+func OnJobComplete(f func(ctx context.Context, jobType string, jobId string, result string, err error)) Option {
+	return func(o *options) {
+		o.jobComplete = f
 	}
 }
 
