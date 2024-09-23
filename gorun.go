@@ -48,18 +48,17 @@ type Validateable interface {
 
 func RegisterHandler[T JobData](h Handler[T]) {
 	var t T
-	hi := handlerInternal[T]{
+	jobType := t.JobType()
+	if _, ok := jobHandlers[jobType]; ok {
+		panic("handler already registered for job type " + jobType)
+	}
+	jobHandlers[jobType] = handlerInternal[T]{
 		Execute: h,
 		ArgsFn: func() *T {
 			var t T
 			return &t
 		},
 	}
-	jobType := t.JobType()
-	if _, ok := jobHandlers[jobType]; ok {
-		panic("handler already registered for job type " + jobType)
-	}
-	jobHandlers[jobType] = hi
 }
 
 const (
