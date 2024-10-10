@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS "gorun_job_data" (
   "created_at" timestamp NOT NULL,
   "updated_at" timestamp NOT NULL,
   "status" varchar(32) NOT NULL,
-  "nonce" bigint NOT NULL,
 
   "trigger_id" varchar(32),
 
