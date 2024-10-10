@@ -2,7 +2,6 @@ package gorundb
 
 import (
 	"context"
-	"math/rand"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -33,7 +32,6 @@ type JobData struct {
 	CreatedAt time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
 	Status    string    `db:"status" json:"status"`
-	Nonce     int64     `db:"nonce" json:"-"`
 
 	TriggerId *string `db:"trigger_id" json:"triggerId"`
 
@@ -45,11 +43,10 @@ type JobData struct {
 }
 
 func (view JobView) AcquireJobsToRun(ctx context.Context, jobLimit int) ([]*JobData, error) {
-	nonce := rand.Int63()
 	jobs, err := queryMany[JobData](ctx, view.db.db, `WITH to_run AS (
-			SELECT * from "gorun_job_data" WHERE "status" = 'scheduled' AND "run_at" < NOW() LIMIT $2 FOR UPDATE
+			SELECT * from "gorun_job_data" WHERE "status" = 'scheduled' AND "run_at" < NOW() LIMIT $1 FOR UPDATE
 		)
-		UPDATE "gorun_job_data" j SET "status" = 'running', "updated_at" = NOW(), "nonce" = $1 FROM to_run WHERE j.id = to_run.id RETURNING j.*`, nonce, jobLimit)
+		UPDATE "gorun_job_data" j SET "status" = 'running', "updated_at" = NOW(), FROM to_run WHERE j.id = to_run.id AND "status" = 'scheduled' RETURNING j.*`, jobLimit)
 
 	if len(jobs) == jobLimit {
 		// Warn if we hit the limit
@@ -60,13 +57,12 @@ func (view JobView) AcquireJobsToRun(ctx context.Context, jobLimit int) ([]*JobD
 }
 
 func (view JobView) MarkIncompleteJobs(ctx context.Context, jobTimeout time.Duration) ([]*JobData, error) {
-	nonce := rand.Int63()
 	tenMinAgo := time.Now().Add(-1 * jobTimeout)
 	return queryMany[JobData](ctx, view.db.db, `WITH stuck AS (
 			SELECT * from "gorun_job_data" WHERE "status" = 'running' AND "updated_at" < $1 FOR UPDATE
 		)
-		UPDATE "gorun_job_data" j SET "status" = 'failed', "updated_at" = NOW(), result = $2, nonce = $3 FROM stuck WHERE j.id = stuck.id RETURNING j.*`,
-		tenMinAgo, "job timed out", nonce)
+		UPDATE "gorun_job_data" j SET "status" = 'failed', "updated_at" = NOW(), result = $2 FROM stuck WHERE j.id = stuck.id  AND "status" = 'running' RETURNING j.*`,
+		tenMinAgo, "job timed out")
 }
 
 func (view JobView) UpdateJob(ctx context.Context, job *JobData) error {
